@@ -1,4 +1,4 @@
---Test of Git Commit: 21-Nov-2020, did it work?
+--Test of Git Commit: 21-Nov-2020
 --Context
 use role accountadmin;
 use database demo;
