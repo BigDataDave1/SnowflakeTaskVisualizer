@@ -1,4 +1,10 @@
---Test of Git Commit: 21-Nov-2020
+/*-------------------------------------------------------------------------------------------------------------------------
+VERSION HISTORY
+-- 15-Nov-2020: Initial Creation
+-- 21-Nov-2020: Test of Git Commit from VS Code 
+-- 26-Nov-2020: Added in Store_Get_Show_2() Code
+-------------------------------------------------------------------------------------------------------------------------*/
+
 --Context
 use role accountadmin;
 use database demo;
@@ -135,6 +141,42 @@ from table(
   scheduled_time_range_start=>dateadd('hour',-24,current_timestamp()),
   result_limit => 100,
   task_name=>'t05_delete_sample')));
+
+--Add in STORE_GET_SHOW2()
+CREATE OR REPLACE PROCEDURE STORE_GET_SHOW2 (OBJECT STRING)
+    RETURNS STRING
+    LANGUAGE JAVASCRIPT
+    EXECUTE AS CALLER
+    AS
+    $$
+    try {
+      //First call the show command for the input object
+      var sqlcmd = `SHOW ` + OBJECT + `;`
+      var stmt = snowflake.createStatement( { sqlText: sqlcmd } );
+      stmt.execute();
+ 
+      //Now create a table with the input Objects name, no spaces
+      var sqlcmd = `CREATE OR REPLACE TABLE ` + OBJECT.replace(" ","_") + `_TABLE (V VARIANT);`;
+      var stmt1 = snowflake.createStatement( { sqlText: sqlcmd } );
+      stmt1.execute();
+ 
+      //Beautiful line of SQL that inserts the data as JSON into our input Object table while transforming the JSON payload into one record per record in the Show Command. 
+      var sqlcmd = `INSERT INTO ` + OBJECT.replace(" ","_") + `_TABLE (SELECT OBJECT_CONSTRUCT(*) FROM TABLE(RESULT_SCAN('` + stmt.getQueryId() + `')));`;
+      var stmt2 = snowflake.createStatement( { sqlText: sqlcmd } );
+      stmt2.execute();
+    // Return a success/error indicator
+    return "Succeeded.";   
+    }
+     
+    catch (err)  {
+      // Return a success/error indicator.
+      return "Failed: " + err;
+    }
+    $$;
+ 
+--Testing
+CALL STORE_GET_SHOW2('TABLES');
+SELECT * FROM TABLES_TABLE;
 
 --Call Get Show 2 with Tasks
 call store_get_show2('tasks');
